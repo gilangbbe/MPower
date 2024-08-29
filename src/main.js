@@ -1,18 +1,34 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const fs = require('fs');
+
+const checkTemp = () => {
+  const directoryName = 'temp';
+
+  const directoryPath = path.join(__dirname, directoryName);
+
+  if (!fs.existsSync(directoryPath)) {
+    fs.mkdirSync(directoryPath);
+    console.log(`Directory '${directoryName}' created.`);
+  } else {
+    console.log(`Directory '${directoryName}' already exists.`);
+  }
+};
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+let mainWindow;
+
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      contextIsolation: false,
+      contextIsolation: true,
       nodeIntegration: true,
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -36,6 +52,7 @@ const createWindow = () => {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
+  checkTemp();
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
@@ -57,3 +74,19 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+ipcMain.on('upload-files', (event, file) => {
+  const filePath = path.join(__dirname, 'temp', file.name);
+
+  fs.writeFileSync(filePath, Buffer.from(file.data), (err) => {
+    if (err) {
+      console.error('File could not be saved:', err);
+      mainWindow.webContents.send('file-upload-response', { success: false });
+    } else {
+      console.log('File saved successfully!');
+      mainWindow.webContents.send('file-upload-response', {
+        success: true,
+        path: filePath,
+      });
+    }
+  });
+});

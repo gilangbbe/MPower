@@ -7,6 +7,8 @@ import Button from '@mui/material/Button';
 import { useSelector, useDispatch } from 'react-redux';
 import { uploadFiles } from '../redux/reducers/fileSlice';
 
+const { useEffect } = React;
+
 export default function InputBox() {
   const filesUploaded = useSelector((state) => state.file.filesUploaded);
   const dispatch = useDispatch();

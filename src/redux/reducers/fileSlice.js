@@ -13,6 +13,15 @@ export const fileSlice = createSlice({
     },
     uploadFiles: (state) => {
       state.files.forEach((e) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const fileBuffer = reader.result;
+          window.api.ipcRenderer.send('upload-files', {
+            name: e.name,
+            data: fileBuffer,
+          });
+        };
+        reader.readAsArrayBuffer(e);
         state.filesUploaded.push({
           file: e,
           completed: false,
